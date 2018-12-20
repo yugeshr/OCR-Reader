@@ -14,9 +14,11 @@
 
 package com.google.firebase.codelab.mlkit;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,6 +28,9 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -90,50 +95,7 @@ public class MainActivity extends AppCompatActivity{
     private Bitmap mSelectedImage;
     private GraphicOverlay mGraphicOverlay;
     private String mCurrentPhotoPath;
-    // Max width (portrait mode)
-    private Integer mImageMaxWidth;
-    // Max height (portrait mode)
-    private Integer mImageMaxHeight;
-    /**
-     * Name of the label file stored in Assets.
-     */
-    private static final String LABEL_PATH = "labels.txt";
-    /**
-     * Number of results to show in the UI.
-     */
-    private static final int RESULTS_TO_SHOW = 3;
-    /**
-     * Dimensions of inputs.
-     */
-    private static final int DIM_BATCH_SIZE = 1;
-    private static final int DIM_PIXEL_SIZE = 3;
-    private static final int DIM_IMG_SIZE_X = 224;
-    private static final int DIM_IMG_SIZE_Y = 224;
-    /**
-     * Labels corresponding to the output of the vision model.
-     */
-    private List<String> mLabelList;
-
-    private final PriorityQueue<Map.Entry<String, Float>> sortedLabels =
-            new PriorityQueue<>(
-                    RESULTS_TO_SHOW,
-                    new Comparator<Map.Entry<String, Float>>() {
-                        @Override
-                        public int compare(Map.Entry<String, Float> o1, Map.Entry<String, Float>
-                                o2) {
-                            return (o1.getValue()).compareTo(o2.getValue());
-                        }
-                    });
-    /* Preallocated buffers for storing image data. */
-    private final int[] intValues = new int[DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y];
-    /**
-     * An instance of the driver class to run model inference with Firebase.
-     */
-    private FirebaseModelInterpreter mInterpreter;
-    /**
-     * Data configuration of input & output data of model.
-     */
-    private FirebaseModelInputOutputOptions mDataOptions;
+    private final int PERMISSION_REQUEST_CAMERA = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,6 +115,17 @@ public class MainActivity extends AppCompatActivity{
                 dispatchTakePictureIntent();
             }
         });
+
+        checkCameraPermission();
+    }
+
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},PERMISSION_REQUEST_CAMERA);
+        }
     }
 
     private void runTextRecognition() {
@@ -254,6 +227,19 @@ public class MainActivity extends AppCompatActivity{
             mSelectedImage = imageBitmap;
             mImageView.setImageBitmap(imageBitmap);
             runTextRecognition();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CAMERA:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(getApplicationContext(),"Permission Granted, Now you can access Camera",Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getApplicationContext(),"Permission Denied, You cannot access Camera.",Toast.LENGTH_SHORT).show();
+                }
+                break;
         }
     }
 }
